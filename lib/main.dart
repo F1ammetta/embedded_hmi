@@ -1,7 +1,15 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'dart:typed_data';
+
+const M = 0.0289644;
+const R = 8.31432;
+const g = 9.81;
+const T = 288.15;
+const P = 101325;
 
 void main() {
   runApp(const MyApp());
@@ -156,67 +164,346 @@ class _MyHomePageState extends State<MyHomePage> {
                       var data = String.fromCharCodes(bindata!);
                       data = data.replaceAll('Â', '');
                       var fields = data.split(' ');
-                      var date = fields[0];
-                      var time = fields[1];
-                      var fix = fields[2] == '0' ? 'Searching' : 'Locked';
-                      var lat = fields[3];
-                      var lon = fields[4];
-                      var alt = fields[5];
-                      return Text(
-                        'Date: $date\nTime: $time\nFix: $fix\nLatitude: $lat\nLongitude: $lon\nAltitude: $alt',
-                        style: const TextStyle(
-                          fontSize: 20,
-                        ),
-                      );
-                      /*Row(
-                        children: [
-                          SfRadialGauge(
-                            title: GaugeTitle(text: 'Angle ${numdata[0]}°'),
-                            axes: <RadialAxis>[
-                              RadialAxis(
-                                minimum: 0,
-                                maximum: 360,
-                                ranges: <GaugeRange>[
-                                  GaugeRange(
-                                      startValue: 0,
-                                      endValue: 360,
-                                      color: Colors.blue),
-                                ],
-                                pointers: <GaugePointer>[
-                                  NeedlePointer(
-                                    value: numdata[0],
-                                    needleColor: Colors.orange,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 50),
-                          Column(
+                      var imu_data = [
+                        double.parse(fields[0]),
+                        double.parse(fields[1]),
+                        double.parse(fields[2]),
+                        double.parse(fields[3]),
+                        double.parse(fields[4]),
+                        double.parse(fields[5]),
+                      ];
+                      var temp = double.parse(fields[6]);
+                      var press = double.parse(fields[7]);
+                      var alt = log(P / press) * (R * T) / (M * g);
+                      // imu_data 0 to 2 are accel values from -4 to 4 g
+                      // imu_data 3 to 5 are gyto values from -250 to 250 deg/s
+                      var accmin = -1.0;
+                      var accmax = 1.0;
+                      var gyromin = -250.0;
+                      var gyromax = 250.0;
+                      return Scrollable(
+                          viewportBuilder: (BuildContext context, _) {
+                        return Column(children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              Text('Distance: ${numdata[1]} cm'),
-                              const SizedBox(height: 50),
-                              SfLinearGauge(
-                                orientation: LinearGaugeOrientation.horizontal,
-                                minimum: 0,
-                                maximum: 100,
-                                ranges: const <LinearGaugeRange>[
-                                  LinearGaugeRange(
-                                      startValue: 0,
-                                      endValue: 100,
-                                      color: Colors.blue),
-                                ],
-                                barPointers: [
-                                  LinearBarPointer(
-                                    value: numdata[1],
-                                    color: Colors.orange,
-                                  ),
-                                ],
+                              //x y then z with labels
+                              Container(
+                                width: 150,
+                                child: SfRadialGauge(
+                                  title: GaugeTitle(
+                                      text:
+                                          'X Acc: ${imu_data[0].toStringAsFixed(2)} g',
+                                      textStyle: const TextStyle(
+                                          fontSize: 16, color: Colors.white)),
+                                  axes: <RadialAxis>[
+                                    RadialAxis(
+                                      minimum: accmin,
+                                      maximum: accmax,
+                                      showLastLabel: true,
+                                      ranges: <GaugeRange>[
+                                        GaugeRange(
+                                            startValue: accmin,
+                                            endValue: accmax,
+                                            color: Colors.cyan,
+                                            startWidth: 10,
+                                            endWidth: 10),
+                                      ],
+                                      pointers: <GaugePointer>[
+                                        NeedlePointer(
+                                            value: imu_data[0],
+                                            enableAnimation: true,
+                                            animationDuration: 1000,
+                                            animationType: AnimationType.ease,
+                                            needleColor: Colors.white,
+                                            needleStartWidth: 1,
+                                            needleEndWidth: 5,
+                                            needleLength: 0.8,
+                                            knobStyle: const KnobStyle(
+                                                knobRadius: 0.1,
+                                                sizeUnit: GaugeSizeUnit.factor,
+                                                borderColor: Colors.white,
+                                                color: Colors.white,
+                                                borderWidth: 0.05)),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
+                              Container(
+                                width: 150,
+                                child: SfRadialGauge(
+                                  title: GaugeTitle(
+                                      text:
+                                          'Y Acc: ${imu_data[1].toStringAsFixed(2)} g',
+                                      textStyle: const TextStyle(
+                                          fontSize: 16, color: Colors.white)),
+                                  axes: <RadialAxis>[
+                                    RadialAxis(
+                                      minimum: accmin,
+                                      maximum: accmax,
+                                      showLastLabel: true,
+                                      ranges: <GaugeRange>[
+                                        GaugeRange(
+                                            startValue: accmin,
+                                            endValue: accmax,
+                                            color: Colors.cyan,
+                                            startWidth: 10,
+                                            endWidth: 10),
+                                      ],
+                                      pointers: <GaugePointer>[
+                                        NeedlePointer(
+                                            value: imu_data[1],
+                                            enableAnimation: true,
+                                            animationDuration: 1000,
+                                            animationType: AnimationType.ease,
+                                            needleColor: Colors.white,
+                                            needleStartWidth: 1,
+                                            needleEndWidth: 5,
+                                            needleLength: 0.8,
+                                            knobStyle: const KnobStyle(
+                                                knobRadius: 0.1,
+                                                sizeUnit: GaugeSizeUnit.factor,
+                                                borderColor: Colors.white,
+                                                color: Colors.white,
+                                                borderWidth: 0.05)),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                width: 150,
+                                child: SfRadialGauge(
+                                  title: GaugeTitle(
+                                      text:
+                                          'Z Acc: ${imu_data[2].toStringAsFixed(2)} g',
+                                      textStyle: const TextStyle(
+                                          fontSize: 16, color: Colors.white)),
+                                  axes: <RadialAxis>[
+                                    RadialAxis(
+                                      minimum: accmin,
+                                      maximum: accmax,
+                                      showLastLabel: true,
+                                      ranges: <GaugeRange>[
+                                        GaugeRange(
+                                            startValue: accmin,
+                                            endValue: accmax,
+                                            color: Colors.cyan,
+                                            startWidth: 10,
+                                            endWidth: 10),
+                                      ],
+                                      pointers: <GaugePointer>[
+                                        NeedlePointer(
+                                            value: imu_data[2],
+                                            enableAnimation: true,
+                                            animationDuration: 1000,
+                                            animationType: AnimationType.ease,
+                                            needleColor: Colors.white,
+                                            needleStartWidth: 1,
+                                            needleEndWidth: 5,
+                                            needleLength: 0.8,
+                                            knobStyle: const KnobStyle(
+                                                knobRadius: 0.1,
+                                                sizeUnit: GaugeSizeUnit.factor,
+                                                borderColor: Colors.white,
+                                                color: Colors.white,
+                                                borderWidth: 0.05)),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(
+                                width: 15,
+                              ),
+                              Text(
+                                'Altitude:\n${alt.toStringAsFixed(2)} m',
+                                style: const TextStyle(
+                                    fontSize: 16, color: Colors.white),
+                              ),
+                              Container(
+                                height: 300,
+                                child: SfLinearGauge(
+                                  orientation: LinearGaugeOrientation.vertical,
+                                  axisTrackStyle: const LinearAxisTrackStyle(
+                                      thickness: 10,
+                                      color: Colors.transparent,
+                                      edgeStyle: LinearEdgeStyle.bothFlat),
+                                  barPointers: <LinearBarPointer>[
+                                    LinearBarPointer(
+                                      value: alt,
+                                      color: Colors.cyan,
+                                      thickness: 10,
+                                      edgeStyle: LinearEdgeStyle.bothFlat,
+                                      position: LinearElementPosition.outside,
+                                    )
+                                  ],
+                                ),
+                              )
                             ],
                           ),
-                        ],
-                      );*/
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              //x y then z with labels
+                              Container(
+                                width: 150,
+                                child: SfRadialGauge(
+                                  title: GaugeTitle(
+                                      text:
+                                          'X Gyro: ${imu_data[3].toStringAsFixed(2)} °/s',
+                                      textStyle: const TextStyle(
+                                          fontSize: 16, color: Colors.white)),
+                                  axes: <RadialAxis>[
+                                    RadialAxis(
+                                      minimum: gyromin,
+                                      maximum: gyromax,
+                                      showLastLabel: true,
+                                      ranges: <GaugeRange>[
+                                        GaugeRange(
+                                            startValue: gyromin,
+                                            endValue: gyromax,
+                                            color: Colors.cyan,
+                                            startWidth: 10,
+                                            endWidth: 10),
+                                      ],
+                                      pointers: <GaugePointer>[
+                                        NeedlePointer(
+                                            value: imu_data[3],
+                                            enableAnimation: true,
+                                            animationDuration: 1000,
+                                            animationType: AnimationType.ease,
+                                            needleColor: Colors.white,
+                                            needleStartWidth: 1,
+                                            needleEndWidth: 5,
+                                            needleLength: 0.8,
+                                            knobStyle: const KnobStyle(
+                                                knobRadius: 0.1,
+                                                sizeUnit: GaugeSizeUnit.factor,
+                                                borderColor: Colors.white,
+                                                color: Colors.white,
+                                                borderWidth: 0.05)),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                width: 150,
+                                child: SfRadialGauge(
+                                  title: GaugeTitle(
+                                      text:
+                                          'Y Gyro: ${imu_data[4].toStringAsFixed(2)} °/s',
+                                      textStyle: const TextStyle(
+                                          fontSize: 16, color: Colors.white)),
+                                  axes: <RadialAxis>[
+                                    RadialAxis(
+                                      minimum: gyromin,
+                                      maximum: gyromax,
+                                      showLastLabel: true,
+                                      ranges: <GaugeRange>[
+                                        GaugeRange(
+                                            startValue: gyromin,
+                                            endValue: gyromax,
+                                            color: Colors.cyan,
+                                            startWidth: 10,
+                                            endWidth: 10),
+                                      ],
+                                      pointers: <GaugePointer>[
+                                        NeedlePointer(
+                                            value: imu_data[4],
+                                            enableAnimation: true,
+                                            animationDuration: 1000,
+                                            animationType: AnimationType.ease,
+                                            needleColor: Colors.white,
+                                            needleStartWidth: 1,
+                                            needleEndWidth: 5,
+                                            needleLength: 0.8,
+                                            knobStyle: const KnobStyle(
+                                                knobRadius: 0.1,
+                                                sizeUnit: GaugeSizeUnit.factor,
+                                                borderColor: Colors.white,
+                                                color: Colors.white,
+                                                borderWidth: 0.05)),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                width: 150,
+                                child: SfRadialGauge(
+                                  title: GaugeTitle(
+                                      text:
+                                          'Z Gyro: ${imu_data[5].toStringAsFixed(2)} °/s',
+                                      textStyle: const TextStyle(
+                                          fontSize: 16, color: Colors.white)),
+                                  axes: <RadialAxis>[
+                                    RadialAxis(
+                                      minimum: gyromin,
+                                      maximum: gyromax,
+                                      showLastLabel: true,
+                                      ranges: <GaugeRange>[
+                                        GaugeRange(
+                                            startValue: gyromin,
+                                            endValue: gyromax,
+                                            color: Colors.cyan,
+                                            startWidth: 10,
+                                            endWidth: 10),
+                                      ],
+                                      pointers: <GaugePointer>[
+                                        NeedlePointer(
+                                            value: imu_data[5],
+                                            enableAnimation: true,
+                                            animationDuration: 1000,
+                                            animationType: AnimationType.ease,
+                                            needleColor: Colors.white,
+                                            needleStartWidth: 1,
+                                            needleEndWidth: 5,
+                                            needleLength: 0.8,
+                                            knobStyle: const KnobStyle(
+                                                knobRadius: 0.1,
+                                                sizeUnit: GaugeSizeUnit.factor,
+                                                borderColor: Colors.white,
+                                                color: Colors.white,
+                                                borderWidth: 0.05)),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(
+                                width: 15,
+                              ),
+                              Text(
+                                'Temperature:\n${temp.toStringAsFixed(2)} °C',
+                                style: const TextStyle(
+                                    fontSize: 16, color: Colors.white),
+                              ),
+                              Container(
+                                height: 300,
+                                child: SfLinearGauge(
+                                  orientation: LinearGaugeOrientation.vertical,
+                                  axisTrackStyle: const LinearAxisTrackStyle(
+                                      thickness: 10,
+                                      color: Colors.transparent,
+                                      edgeStyle: LinearEdgeStyle.bothFlat),
+                                  barPointers: <LinearBarPointer>[
+                                    LinearBarPointer(
+                                      value: temp,
+                                      color: Colors.cyan,
+                                      thickness: 10,
+                                      edgeStyle: LinearEdgeStyle.bothFlat,
+                                      position: LinearElementPosition.outside,
+                                    )
+                                  ],
+                                ),
+                              )
+                            ],
+                          ),
+                        ]);
+                      });
                     } else {
                       return const Text('');
                     }
